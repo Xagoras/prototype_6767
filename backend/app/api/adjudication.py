@@ -2,7 +2,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from ..auth import get_current_user, get_document_or_404, require_arbiter
+from ..auth import (
+    can_manage_document, get_current_user, get_document_or_404,
+    is_document_participant, require_arbiter, require_document_participant,
+)
 from ..database import get_db
 from ..models import (
     Adjudication, AnnotationVersion, Document, Proposition, RelationNode, User,
@@ -77,11 +80,13 @@ def compare_document(
     base_version_id: int | None = None,
     base_kind: str | None = None,
     db: Session = Depends(get_db),
-    user: User = Depends(require_arbiter),
+    user: User = Depends(get_current_user),
 ):
     """多版本差异载荷（裁定页与教学比对页共用）。
 
     base_kind 供教学比对选择基准类型：final（最终版）/ reference（标准答案）。
+    访问控制：裁定者/创建者/管理员可见全部版本；被分配的标注员仅可比较"本人版本"，
+    且须已提交（原型 2.1：教学入口不得在学生提交前暴露标准答案）。
     """
     doc = get_document_or_404(db, document_id)
     versions = (
@@ -92,6 +97,27 @@ def compare_document(
     )
     if not versions:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "该文档还没有任何标注版本")
+
+    is_manager = can_manage_document(db, user, doc)
+    if is_manager:
+        visible = versions
+    else:
+        if not is_document_participant(db, user, doc):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "无权查看该文档的比对")
+        own = [v for v in versions if v.annotator_id == user.id]
+        if not own:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "您还没有可比的标注版本")
+        if not any(v.status == "submitted" for v in own) and doc.status not in ("ADJUDICATED", "OUTPUT"):
+            raise HTTPException(status.HTTP_403_FORBIDDEN,
+                                "请先提交标注，之后方可与标准答案/最终版比对")
+        if base_version_id is not None:
+            ok_base = any(v.id == base_version_id and
+                          (v.annotator_id == user.id or v.kind in ("reference", "final"))
+                          for v in versions)
+            if not ok_base:
+                raise HTTPException(status.HTTP_403_FORBIDDEN, "无权以该版本为基准比对")
+        visible = own
+
     # 基准：显式指定 id → 指定 kind → reference → final → 第一个
     base = None
     if base_version_id is not None:
@@ -111,7 +137,7 @@ def compare_document(
 
     groups: list[CompareGroupOut] = []
     any_exceeded = False
-    for v in versions:
+    for v in visible:
         v_props, v_rels = _load_version_content(db, v.id)
         v_rows = build_prop_rows(
             db.query(Proposition).filter(Proposition.version_id == v.id).all())
@@ -221,8 +247,8 @@ def adjudicate(document_id: int, body: AdjudicateRequest,
 
 @router.get("/documents/{document_id}/final", response_model=VersionOut)
 def get_final(document_id: int, db: Session = Depends(get_db),
-              user: User = Depends(get_current_user)):
-    """最终版内容（标注员在裁定完成后可查看对比，Q7）。"""
+              user: User = Depends(require_document_participant)):
+    """最终版内容（文档参与者/创建者/管理员可见，Q7）。"""
     get_document_or_404(db, document_id)
     final = (
         db.query(AnnotationVersion)
@@ -239,9 +265,15 @@ def get_final(document_id: int, db: Session = Depends(get_db),
 @router.get("/versions/{version_id}", response_model=VersionOut)
 def get_version(version_id: int, db: Session = Depends(get_db),
                 user: User = Depends(get_current_user)):
-    """单版本内容（裁定工作副本/教学比对加载指定版本）。"""
+    """单版本内容（本人标注 / 裁定工作副本 / 教学比对加载指定版本）。
+
+    仅本人、任务创建者、管理员或该文档裁定者可读取，避免越权窥探他人标注。
+    """
     v = db.get(AnnotationVersion, version_id)
     if v is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "标注版本不存在")
+    doc = get_document_or_404(db, v.document_id)
+    if v.annotator_id != user.id and not can_manage_document(db, user, doc):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "无权查看该标注版本")
     from ..api.annotations import _version_out
     return _version_out(db, v, user)
