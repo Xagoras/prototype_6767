@@ -98,3 +98,88 @@ frontend/
 - **导出锁定**：任一导出记录产生即文档 OUTPUT，所有写端点 403（"导出后数据可查看但不可修改"）
 - **图片导出**：前端 html-to-image 截取图示视口（后端不重复实现图元渲染，避免两套图元标准漂移）
 - **压缩包下载**：原型以逐文件下载替代（需求 5.2 折衷）
+
+---
+
+# 开发者指南（二次修改 / Bug 修复）
+
+> 使用 Claude Code 开发时请优先阅读仓库根目录的 **CLAUDE.md**（自动加载的项目速览）。
+> 本节为人工阅读版，与 CLAUDE.md 内容一致。
+
+## 架构与数据流
+
+```
+浏览器（React）
+ ├─ TextPanel 选区 → charIndex.ts 计算码点偏移
+ ├─ annotationStore（zustand）
+ │    ├─ 本地模型：命题 seq / 关系 args 用 seq+下标
+ │    ├─ undo/redo 快照栈（上限 50）+ 防抖保存（1.2s）
+ │    └─ 保存 = 全量 PUT /versions/{id}/content（delete+insert）
+ ├─ treeToGraph.ts：关系树 → React Flow 节点/边（六类嵌套）
+ └─ ArgumentGraph：dagre 布局 + 手动位置优先 + 拖拽回写 graph_layout
+
+后端（FastAPI + SQLite）
+ ├─ parser.py：文件解析 + 文本规范化（服务器文本是唯一权威）
+ ├─ extraction.py：裁判理由自动提取（judgment / guiding_case+ref_case 两套规则）
+ ├─ segmentation.py：颗粒度切割（引号保护/句切/子句/过渡词归并）
+ ├─ expr.py：关系树校验（元数/环/叶子）+ 形式化表达式
+ ├─ diff.py：命题对齐（精确边界→IoU）+ 关系指纹差异 + 颗粒度差异率
+ └─ 锁定：exports 记录产生 → document.status=OUTPUT → 写端点 403
+```
+
+## 按需求找文件（修改指引）
+
+| 想改什么 | 改哪里 |
+|---|---|
+| 新增/调整标签（要素类型、子类型） | 指南 taxonomy（`backend/app/services/taxonomy.py` + `seed/guide_v1_1.json`），前端自动跟随，**勿在前端硬编码** |
+| 新增关系类型 | taxonomy + `treeToGraph.ts` expand + 后端 `expr.py` 校验 + `RelationBuilder` REL_DEFS |
+| 图示样式/图元 | `components/graph/nodes/*.tsx`（节点外观）+ `treeToGraph.ts`（结构） |
+| 颗粒度切割规则 | `backend/app/services/segmentation.py`（+ `tests/test_segmentation.py`） |
+| 裁判理由提取规则 | `backend/app/services/extraction.py`（+ `tests/test_extraction.py`） |
+| 差异比对算法 | `backend/app/services/diff.py` |
+| 导出格式 | `backend/app/services/export_json.py` / `export_excel.py` |
+| 标注交互（选区/命题列表） | `TextPanel.tsx` / `PropositionList.tsx` / `annotationStore.ts` |
+| 权限/流程控制 | `backend/app/auth.py`（依赖断言）+ 各 API 模块 |
+
+## 关键约定（违反会产生隐蔽 bug）
+
+1. **字符索引 = Unicode 码点**（JS `Array.from` / Python 切片天然一致），偏移相对 `reasoning_text`
+2. **前端不二次规范化文本**——渲染与提交的文本一律来自服务器返回，否则偏移错位（保存时后端校验，不一致 409）
+3. **关系 args 两套表示**：本地/保存 payload 用「seq + 数组下标」，服务器落库用「数据库主键」。
+   前端 `relationsFromServer()` 负责转换——漏转会崩溃（历史 bug）
+4. **保存后必须应用服务器响应**（全量替换后 id 已变）
+5. **流程不可回退**：任务状态机单向流转（回退 409）；文档导出后锁定（写端点 403）
+
+## 调试与排查
+
+```bash
+# API 调试：Swagger 文档（可直接调用接口）
+http://localhost:8000/docs
+
+# 重置数据（演示账号 demo123：admin/teacher/stu1/stu2/arbiter）
+python -m app.seed --reset
+
+# 快速验证一段逻辑（不需要起服务）
+cd backend && python -c "from app.services.segmentation import segment_reasoning; print(segment_reasoning('测试。文本，切割。'))"
+
+# 后端测试（21 例）/ 前端测试（13 例）
+cd backend && python -m pytest tests/ -q
+cd frontend && npm test
+```
+
+### 常见问题
+
+| 现象 | 原因与处理 |
+|---|---|
+| 端口 8000/5173 被占用 | 用"启动.bat"会自愈清理；手动：`netstat -ano` 找 PID 后 `taskkill //F //PID <pid>`（Git Bash 双斜杠） |
+| 标注页 RelationBuilder 白屏/报错 | 关系 args 转换遗漏——检查 `relationsFromServer` 调用点 |
+| 保存命题返回 409 | 文本与服务器原文不一致（可能前端做了二次规范化），重新选区 |
+| 测试失败找不到表 | TestClient 需 `with TestClient(app) as c:` 触发建表 |
+| 中文文件名下载乱码 | 走 `exports.py` 的 RFC 5987 编码，勿改动 disposition 逻辑 |
+| 一键启动 12 秒自动停止 | 浏览器页面未正常打开心跳未上报；确认页面已加载（心跳在 main.tsx 模块级） |
+
+## 验证清单（改动后跑一遍）
+
+1. `cd backend && python -m pytest tests/ -q` 全绿
+2. `cd frontend && npx tsc -b && npm test` 全绿
+3. `python -m app.seed --reset` 后按 README"演示流程"手工走查（teacher 标准答案 → stu1 比对 → 裁定 → 导出锁定）
