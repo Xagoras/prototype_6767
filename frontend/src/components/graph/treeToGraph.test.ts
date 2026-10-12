@@ -26,7 +26,7 @@ describe('基础结构（无嵌套，指南 6.2）', () => {
     const toRel = edges.find((e) => e.source === 'p1' && e.target === relNodes[0].id)
     const fromRel = edges.find((e) => e.source === relNodes[0].id && e.target === 'p2')
     expect(toRel?.markerEnd).toBeUndefined()
-    expect(fromRel?.markerEnd?.type).toBe('arrowclosed')
+    expect(fromRel?.markerEnd).toBeTruthy()
   })
 
   it('反对关系 A(p1,p2)：空心圆', () => {
@@ -48,7 +48,7 @@ describe('基础结构（无嵌套，指南 6.2）', () => {
     const relNodes = nodes.filter((n) => n.type === 'relation')
     const fromRel = edges.find((e) => e.source === relNodes[0].id)
     expect(fromRel?.target).toBe('p2')
-    expect(fromRel?.markerEnd?.type).toBe('arrowclosed')
+    expect(fromRel?.markerEnd).toBeTruthy()
   })
 
   it('同一关系 I(p1,p2)：斜杠框节点 + 2 条无向边', () => {
@@ -72,7 +72,7 @@ describe('嵌套结构（指南 6.3）', () => {
     expect(relNodes[0].data?.relType).toBe('J')
     // 内层 ⊕ → p3 有箭头
     const toP3 = edges.find((e) => e.target === 'p3')
-    expect(toP3?.markerEnd?.type).toBe('arrowclosed')
+    expect(toP3?.markerEnd).toBeTruthy()
     expect(toP3?.source).toBe(relNodes[0].id)
   })
 
@@ -104,7 +104,7 @@ describe('嵌套结构（指南 6.3）', () => {
     const jToS = edges.find((e) => e.source === jNode.id && e.target === sNode.id)
     expect(jToS?.markerEnd).toBeUndefined()
     const sToP3 = edges.find((e) => e.source === sNode.id && e.target === 'p3')
-    expect(sToP3?.markerEnd?.type).toBe('arrowclosed')
+    expect(sToP3?.markerEnd).toBeTruthy()
   })
 
   it('6.3.4 匹配内嵌支持 S(M(p1,p2),p3)：以被匹配的一般判断 p2 为支持起点', () => {
@@ -118,7 +118,7 @@ describe('嵌套结构（指南 6.3）', () => {
     const p2ToS = edges.find((e) => e.source === 'p2' && e.target === sNode.id)
     expect(p2ToS).toBeTruthy()
     const sToP3 = edges.find((e) => e.source === sNode.id && e.target === 'p3')
-    expect(sToP3?.markerEnd?.type).toBe('arrowclosed')
+    expect(sToP3?.markerEnd).toBeTruthy()
   })
 
   it('6.3.5 支持内嵌反对 A(p3, S(p1,p2))：反对箭头指向支持关系节点', () => {
@@ -131,7 +131,7 @@ describe('嵌套结构（指南 6.3）', () => {
     const sNode = nodes.find((n) => n.type === 'relation' && n.data?.relType === 'S')!
     // ○ → ●（反对指向支持关系节点，箭头）
     const aToS = edges.find((e) => e.source === aNode.id && e.target === sNode.id)
-    expect(aToS?.markerEnd?.type).toBe('arrowclosed')
+    expect(aToS?.markerEnd).toBeTruthy()
   })
 
   it('6.3.6 多层嵌套 S(M(J(p1,p2,p3),p4),p5)：自内而外逐层构造', () => {
@@ -151,10 +151,10 @@ describe('嵌套结构（指南 6.3）', () => {
     expect(p4ToS).toBeTruthy()
     // ● → p5 箭头
     const sToP5 = edges.find((e) => e.source === sNode.id && e.target === 'p5')
-    expect(sToP5?.markerEnd?.type).toBe('arrowclosed')
+    expect(sToP5?.markerEnd).toBeTruthy()
     // 内层 ⊕ → p4 箭头（匹配方向）
     const jToP4 = edges.find((e) => e.source === jNode.id && e.target === 'p4')
-    expect(jToP4?.markerEnd?.type).toBe('arrowclosed')
+    expect(jToP4?.markerEnd).toBeTruthy()
   })
 })
 

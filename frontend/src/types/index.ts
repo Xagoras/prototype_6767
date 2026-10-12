@@ -241,31 +241,43 @@ export type DiffCategory =
   | 'type' // 类型差异
   | 'subtype' // 子类型差异
   | 'edited_text' // 文字已编辑
-  | 'only_a' // 仅 A 版有
-  | 'only_b' // 仅 B 版有
+  | 'only_a' // 仅基准有
+  | 'only_b' // 仅此版本有
 
-export interface PropositionDiff {
+export interface PropDiffItem {
   category: DiffCategory
-  a: Proposition | null
-  b: Proposition | null
   a_seq: number | null
   b_seq: number | null
+  a_text: string | null
+  b_text: string | null
+  a_type: string | null
+  b_type: string | null
+  a_subtype: string | null
+  b_subtype: string | null
 }
 
-export interface RelationDiff {
+export interface RelDiffItem {
   category: DiffCategory | 'direction' | 'nested' | 'missing' | 'extra'
-  a: RelationNode | null
-  b: RelationNode | null
   a_expr: string | null
   b_expr: string | null
 }
 
+export interface CompareGroup {
+  version_id: number
+  annotator_name: string | null
+  kind: string
+  status: string
+  proposition_count: number
+  relation_count: number
+  granularity_rate: number | null
+  prop_diffs: PropDiffItem[]
+  relation_diffs: RelDiffItem[]
+}
+
 export interface ComparePayload {
-  versions: AnnotationVersion[]
-  proposition_diffs: PropositionDiff[]
-  relation_diffs: RelationDiff[]
-  granularity_rate: number | null // 颗粒度差异率（0~1）
+  base_version_id: number
   warn_threshold_exceeded: boolean
+  groups: CompareGroup[]
 }
 
 // ---------- 导出 ----------

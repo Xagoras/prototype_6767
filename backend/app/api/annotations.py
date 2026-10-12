@@ -25,19 +25,25 @@ router = APIRouter(prefix="", tags=["annotations"])
 def _version_kind_for(db: Session, doc: Document, user: User) -> str:
     """按分配角色确定版本 kind：annotator→normal、reference→reference。
 
-    任务创建者/管理员无分配记录时默认 normal。
+    单人可多角色（Q4）：按 annotator > reference 优先级取版本类型；
+    仅 arbiter 角色时不持有标注版本。任务创建者/管理员无分配记录时默认 normal。
     """
-    assign = (
+    for role, kind in (("annotator", "normal"), ("reference", "reference")):
+        assign = (
+            db.query(Assignment)
+            .filter(Assignment.document_id == doc.id, Assignment.user_id == user.id,
+                    Assignment.role == role)
+            .first()
+        )
+        if assign:
+            return kind
+    has_any = (
         db.query(Assignment)
         .filter(Assignment.document_id == doc.id, Assignment.user_id == user.id)
         .first()
     )
-    if assign:
-        if assign.role == "annotator":
-            return "normal"
-        if assign.role == "reference":
-            return "reference"
-        # arbiter 不持有标注版本
+    if has_any:
+        # 仅 arbiter：不持有标注版本
         raise HTTPException(status.HTTP_403_FORBIDDEN,
                             "裁定者不进行标注，请前往裁定页面")
     task = get_task_or_404(db, doc.task_id)
@@ -295,6 +301,9 @@ def submit_version(version_id: int, db: Session = Depends(get_db),
         )
         if all(v2.status == "submitted" for v2 in all_normal) and all_normal:
             doc.status = "SUBMITTED"
+    # final 工作副本提交 → 裁定定稿
+    if v.kind == "final":
+        doc.status = "ADJUDICATED"
     db.commit()
     db.refresh(v)
     return _version_out(db, v, user)

@@ -43,7 +43,7 @@ interface AnnotationState {
   canUndo: boolean
   canRedo: boolean
 
-  load: (docId: number) => Promise<void>
+  load: (docId: number, versionId?: number) => Promise<void>
   setSelection: (sel: { start: number; end: number; text: string } | null) => void
   setSelectedPropSeq: (seq: number | null) => void
   createProp: (start: number, end: number, text: string, typeCode?: string, subtypeCode?: string) => void
@@ -105,11 +105,14 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => {
     canUndo: false,
     canRedo: false,
 
-    load: async (docId) => {
+    load: async (docId, versionId) => {
       set({ loading: true, lastError: '' })
       try {
+        const verUrl = versionId
+          ? `/versions/${versionId}` // 裁定工作副本 / 教学比对：加载指定版本
+          : `/documents/${docId}/my-version`
         const [ver, doc, guides] = await Promise.all([
-          api.get<AnnotationVersion>(`/documents/${docId}/my-version`),
+          api.get<AnnotationVersion>(verUrl),
           api.get<Document>(`/documents/${docId}`),
           api.get<Guide[]>('/guides'),
         ])

@@ -5,7 +5,7 @@
  * 右：论证图示区（M4 里程碑接入）
  */
 import { useEffect } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import ArgumentGraph from '../components/graph/ArgumentGraph'
 import LabelPicker from '../components/annotate/LabelPicker'
 import PropositionList from '../components/annotate/PropositionList'
@@ -16,11 +16,13 @@ import { useAnnotationStore } from '../stores/annotationStore'
 
 export default function AnnotatePage() {
   const { documentId } = useParams()
+  const [searchParams] = useSearchParams()
+  const versionId = searchParams.get('version')
   const store = useAnnotationStore()
 
   useEffect(() => {
-    if (documentId) void store.load(Number(documentId))
-  }, [documentId])
+    if (documentId) void store.load(Number(documentId), versionId ? Number(versionId) : undefined)
+  }, [documentId, versionId])
 
   const doc = store.doc
 

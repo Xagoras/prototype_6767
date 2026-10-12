@@ -10,6 +10,7 @@ import GuideManagePage from './pages/GuideManagePage'
 import TaskCreatePage from './pages/TaskCreatePage'
 import TaskDetailPage from './pages/TaskDetailPage'
 import AnnotatePage from './pages/AnnotatePage'
+import AdjudicatePage from './pages/AdjudicatePage'
 
 /** 需要登录的页面壳：无 token 跳转登录页 */
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -67,6 +68,14 @@ export default function App() {
           element={
             <RequireAuth>
               <AnnotatePage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/adjudicate/:documentId"
+          element={
+            <RequireAuth>
+              <AdjudicatePage />
             </RequireAuth>
           }
         />
