@@ -82,29 +82,31 @@ def segment_reasoning(text: str) -> list[dict]:
             blocks.append({"start": start, "end": n, "text": text[start:n]})
 
     # 过渡语词归并：候选以过渡词开头 → 过渡词并入下一候选
+    # 关键：并入时把下一块的 start 回退到过渡词起点，保证 text == reasoning_text[start:end]
     result: list[dict] = []
-    pending_prefix = ""
+    pending_start: int | None = None  # 被剥离的纯过渡词块起点（待并入下一块）
     for b in blocks:
         t = b["text"]
-        # 仅对原始块检查过渡词（已并入前缀的块不再匹配，避免重复剥离）
         m = _TRANSITION_RE.match(t)
         if m and t[-1] not in _SENTENCE_ENDS:
-            prefix, rest = m.group(0), t[m.end():]
+            rest = t[m.end():]
             if rest.strip():
-                # 剩余文字自成一候选（块内过渡词后的内容）
-                result.append({"start": b["start"], "end": b["end"],
-                               "text": rest})
-            # 过渡词并入下一候选
-            pending_prefix = prefix
+                # 块内：过渡词与其后内容同属一个要素，保持原样（偏移即原文）
+                result.append({"start": b["start"], "end": b["end"], "text": text[b["start"]:b["end"]]})
+                continue
+            # 整块仅为过渡语词（如"因此，"）：并入下一要素
+            if pending_start is None:
+                pending_start = b["start"]
             continue
-        if pending_prefix:
-            t = pending_prefix + t
-            pending_prefix = ""
-        result.append({"start": b["start"], "end": b["end"], "text": t})
+        if pending_start is not None:
+            result.append({"start": pending_start, "end": b["end"],
+                           "text": text[pending_start:b["end"]]})
+            pending_start = None
+        else:
+            result.append({"start": b["start"], "end": b["end"], "text": text[b["start"]:b["end"]]})
 
-    # 结尾遗留的 pending 前缀（如文末"因此"）独立成块
-    if pending_prefix.strip():
-        result.append({"start": n - len(pending_prefix), "end": n,
-                       "text": pending_prefix})
+    # 结尾遗留的 pending（如文末"因此"）独立成块
+    if pending_start is not None:
+        result.append({"start": pending_start, "end": n, "text": text[pending_start:n]})
 
     return result

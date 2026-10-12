@@ -37,3 +37,13 @@ def test_offsets_are_codepoints():
     text = "甲说。乙说，丙说。"
     for s in segment_reasoning(text):
         assert text[s["start"]:s["end"]] == s["text"]
+
+
+def test_transition_merge_offsets_consistent():
+    """过渡词块并入后一要素时，text 仍与码点切片一致（回归 bug）。"""
+    text = "被告未付款，因此，被告构成违约。"
+    segs = segment_reasoning(text)
+    assert "因此，被告构成违约。" in [s["text"] for s in segs]
+    for s in segs:
+        assert text[s["start"]:s["end"]] == s["text"]
+
