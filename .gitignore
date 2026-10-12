@@ -1,0 +1,27 @@
+# 依赖与构建产物
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 运行时数据
+backend/data/
+*.db
+*.sqlite3
+
+# 环境与工具
+.env
+.pytest_cache/
+.coverage
+
+# 编辑器
+.vscode/
+.idea/
+.DS_Store
+
+# 需求材料与提取中间产物（不入库）
+*.docx
+*.pdf
+_extract_*.txt

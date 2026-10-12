@@ -1,0 +1,130 @@
+/**
+ * 全局样式：法律论证标注系统。
+ * 采用克制的学术风格配色（米白底 + 深墨蓝文字 + 学术红点缀）。
+ */
+:root {
+  --bg: #f7f5f0;            /* 米白底 */
+  --panel: #ffffff;
+  --ink: #23263b;           /* 深墨蓝文字 */
+  --muted: #6b7086;
+  --line: #dcd9d0;
+  --accent: #8c2f39;        /* 学术红 */
+  --accent-soft: #f3e4e6;
+  --ok: #2e6b4f;
+  --warn: #9a6a1f;
+
+  /* 命题类型配色（左栏高亮与图示外框） */
+  --sf: #c8d8f0;  /* 个别事实判断：蓝 */
+  --gf: #cfe6d8;  /* 一般事实判断：绿 */
+  --sm: #f2ddc8;  /* 个别规范判断：橙 */
+  --gm: #ecd6e2;  /* 一般规范判断：紫红 */
+  --is: #e8e4d4;  /* 争议焦点 */
+  --non: #e0e0e0; /* 非论证成分：灰 */
+
+  font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font-size: 14px; }
+a { color: var(--accent); text-decoration: none; }
+button { font-family: inherit; }
+
+/* ---------- 登录页 ---------- */
+.login-wrap {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #efece3 0%, #e4e7ef 100%);
+}
+.login-card {
+  width: 380px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 32px;
+  box-shadow: 0 6px 24px rgba(35, 38, 59, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.login-card h1 { margin: 0; font-size: 20px; text-align: center; }
+.login-card .subtitle { margin: 0 0 8px; text-align: center; color: var(--muted); font-size: 12px; }
+.mode-tabs { display: flex; gap: 8px; margin-bottom: 4px; }
+.mode-tabs button {
+  flex: 1; padding: 8px; border: 1px solid var(--line); background: var(--bg);
+  border-radius: 6px; cursor: pointer; color: var(--muted);
+}
+.mode-tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.login-card label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.login-card input { padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; }
+.login-card input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+.login-card .error { color: var(--accent); font-size: 13px; }
+
+/* ---------- 通用按钮 ---------- */
+button.primary, .link-btn.primary-link {
+  padding: 10px 16px; border: none; border-radius: 6px;
+  background: var(--accent); color: #fff; cursor: pointer; font-size: 14px;
+}
+button.primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ---------- 顶栏 ---------- */
+.page { height: 100%; display: flex; flex-direction: column; }
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 20px; background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.topbar .brand { font-weight: 700; font-size: 16px; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.user-name { color: var(--muted); }
+.admin-tag {
+  font-style: normal; margin-left: 6px; font-size: 11px;
+  background: var(--accent-soft); color: var(--accent); padding: 2px 6px; border-radius: 4px;
+}
+.link-btn {
+  padding: 6px 12px; border: 1px solid var(--line); background: var(--panel);
+  border-radius: 6px; cursor: pointer; color: var(--ink); font-size: 13px;
+}
+.link-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---------- 页面主体 ---------- */
+.page-body { flex: 1; overflow: auto; padding: 24px; display: flex; flex-direction: column; gap: 28px; }
+.page-body h2 { margin: 0 0 12px; font-size: 16px; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.task-card {
+  display: block; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 16px; color: var(--ink);
+}
+.task-card:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(35,38,59,.06); }
+.task-card-title { font-weight: 600; margin-bottom: 10px; }
+.task-card-meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
+.empty-hint { color: var(--muted); background: var(--panel); border: 1px dashed var(--line); border-radius: 8px; padding: 20px; text-align: center; }
+
+/* ---------- 状态徽章 ---------- */
+.status-badge {
+  font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #eee; color: var(--muted);
+}
+.status-CREATED { background: #e8e4d4; color: #7a6f3d; }
+.status-ANNOTATING { background: #cfe6d8; color: var(--ok); }
+.status-ADJUDICATING { background: #f2ddc8; color: #8a5a1f; }
+.status-OUTPUT, .status-ADJUDICATED { background: #e0e0e0; color: #555; }
+.status-SUBMITTED { background: #c8d8f0; color: #2a4a7a; }
+.status-ASSIGNED { background: #ecd6e2; color: #7a3a55; }
+
+/* ---------- 三栏布局 ---------- */
+.tri-panel { height: 100%; }
+.tri-pane { background: var(--panel); overflow: hidden; display: flex; flex-direction: column; }
+.resize-handle { width: 5px; background: var(--line); cursor: col-resize; }
+.resize-handle:hover { background: var(--accent); }
+
+/* ---------- 通用表单 ---------- */
+.form-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.form-row label { font-size: 13px; color: var(--muted); }
+.form-row input, .form-row select, .form-row textarea {
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; font-family: inherit;
+}
+.form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+  outline: 2px solid var(--accent-soft); border-color: var(--accent);
+}
+.error { color: var(--accent); font-size: 13px; }
