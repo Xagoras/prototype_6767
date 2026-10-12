@@ -6,7 +6,7 @@
  * - 鼠标划选后弹出浮动工具条：选择类型直接创建命题（或仅建序号）
  */
 import { useMemo, useRef, useState } from 'react'
-import { codePointLength, lineStarts, selectionToRange } from '../../utils/charIndex'
+import { codePointLength, codePointSlice, lineStarts, selectionToRange } from '../../utils/charIndex'
 import { useAnnotationStore } from '../../stores/annotationStore'
 import type { ElementDef, Proposition } from '../../types'
 
@@ -48,12 +48,12 @@ export default function TextPanel({ text, propositions, readOnly = false }: Prop
       y: (rect?.top ?? 0) + window.scrollY - 44,
       start: range.start, end: range.end,
     })
-    store.setSelection({ ...range, text: text.slice(range.start, range.end) })
+    store.setSelection({ ...range, text: codePointSlice(text, range.start, range.end) })
   }
 
   const createProp = (code?: string, sub?: string) => {
     if (!tooltip) return
-    store.createProp(tooltip.start, tooltip.end, text.slice(tooltip.start, tooltip.end), code, sub)
+    store.createProp(tooltip.start, tooltip.end, codePointSlice(text, tooltip.start, tooltip.end), code, sub)
     setTooltip(null)
     store.setSelection(null)
     window.getSelection()?.removeAllRanges()
@@ -78,9 +78,9 @@ export default function TextPanel({ text, propositions, readOnly = false }: Prop
       const bg = TYPE_COLORS[p.type_code ?? ''] ?? 'transparent'
       parts.push(
         <mark key={`m${p.char_start}`} className="prop-mark"
+          data-seq={p.seq}
           style={{ background: bg }} title={`P${p.seq}${p.type_code ? ` · ${p.type_code}${p.subtype_code ? '-' + p.subtype_code : ''}` : ' · 未标类型'}`}>
           {content.slice(localStart - lineStart, localEnd - lineStart)}
-          <sup className="prop-seq">{p.seq}</sup>
         </mark>,
       )
       cursor = localEnd

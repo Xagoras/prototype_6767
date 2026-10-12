@@ -24,7 +24,12 @@ export function selectionToRange(root: HTMLElement, textLength: number): { start
   }
 }
 
-/** 文本节点内偏移 → 全局码点偏移 */
+/** 文本节点/元素内偏移 → 全局码点偏移
+ *
+ * 注意：一行内可能存在多个文本节点（命题高亮 <mark> 会把一行拆成
+ * 多个 text node），因此不能只用端点所在文本节点自身的偏移，
+ * 必须累计该文本节点前、同一行内的所有文本（用 Range 量取）。
+ */
 function nodeOffsetToGlobal(node: Node, offset: number): number | null {
   // 向上找到 data-start 属性的行 span
   let el: HTMLElement | null = node.nodeType === Node.TEXT_NODE
@@ -34,10 +39,12 @@ function nodeOffsetToGlobal(node: Node, offset: number): number | null {
   if (!el) return null
 
   const lineStart = Number(el.getAttribute('data-start'))
-  // 文本节点数据（选区端点必在行内文本节点中；嵌套 mark 时取父文本）
-  const text = node.nodeType === Node.TEXT_NODE ? (node as Text).data : ''
-  const offsetInNode = Math.min(offset, Array.from(text).length)
-  return lineStart + offsetInNode
+  // 用 Range 从句首量到端点，统计其间的码点数（正确覆盖同行前置节点）
+  const range = document.createRange()
+  range.setStart(el, 0)
+  range.setEnd(node, offset)
+  const offsetInLine = codePointLength(range.toString())
+  return lineStart + offsetInLine
 }
 
 /** 字符串按码点切片的跨平台等价实现（JS 侧辅助） */
