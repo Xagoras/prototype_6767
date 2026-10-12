@@ -75,10 +75,14 @@ def _expr_of_id(rid: int, rels: list[RelationNode], id_to_seq: dict[int, int]) -
 def compare_document(
     document_id: int,
     base_version_id: int | None = None,
+    base_kind: str | None = None,
     db: Session = Depends(get_db),
     user: User = Depends(require_arbiter),
 ):
-    """多版本差异载荷（裁定页与教学比对页共用）。"""
+    """多版本差异载荷（裁定页与教学比对页共用）。
+
+    base_kind 供教学比对选择基准类型：final（最终版）/ reference（标准答案）。
+    """
     doc = get_document_or_404(db, document_id)
     versions = (
         db.query(AnnotationVersion)
@@ -88,14 +92,18 @@ def compare_document(
     )
     if not versions:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "该文档还没有任何标注版本")
-    # 基准：显式指定 → reference 优先 → 第一个
+    # 基准：显式指定 id → 指定 kind → reference → final → 第一个
     base = None
     if base_version_id is not None:
         base = next((v for v in versions if v.id == base_version_id), None)
         if base is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "基准版本不存在")
+    if base is None and base_kind in ("final", "reference"):
+        base = next((v for v in versions if v.kind == base_kind), None)
     if base is None:
-        base = next((v for v in versions if v.kind == "reference"), versions[0])
+        base = next((v for v in versions if v.kind == "reference"), None) \
+            or next((v for v in versions if v.kind == "final"), None) \
+            or versions[0]
 
     base_props, base_rels = _load_version_content(db, base.id)
     base_rows = build_prop_rows(

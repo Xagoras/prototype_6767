@@ -11,6 +11,8 @@ import TaskCreatePage from './pages/TaskCreatePage'
 import TaskDetailPage from './pages/TaskDetailPage'
 import AnnotatePage from './pages/AnnotatePage'
 import AdjudicatePage from './pages/AdjudicatePage'
+import ComparePage from './pages/ComparePage'
+import ExportCenterPage from './pages/ExportCenterPage'
 
 /** 需要登录的页面壳：无 token 跳转登录页 */
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -76,6 +78,22 @@ export default function App() {
           element={
             <RequireAuth>
               <AdjudicatePage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/compare/:documentId"
+          element={
+            <RequireAuth>
+              <ComparePage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/exports/:taskId"
+          element={
+            <RequireAuth>
+              <ExportCenterPage />
             </RequireAuth>
           }
         />

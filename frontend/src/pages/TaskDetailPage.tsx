@@ -98,7 +98,10 @@ export default function TaskDetailPage() {
               </div>
               <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
                 {a.role === 'annotator' && (
-                  <button className="link-btn" onClick={() => navigate(`/annotate/${a.document_id}`)}>去标注</button>
+                  <>
+                    <button className="link-btn" onClick={() => navigate(`/annotate/${a.document_id}`)}>去标注</button>
+                    <button className="link-btn" onClick={() => navigate(`/compare/${a.document_id}`)}>查看比对</button>
+                  </>
                 )}
                 {a.role === 'reference' && (
                   <button className="link-btn" onClick={() => navigate(`/annotate/${a.document_id}`)}>标注标准答案</button>

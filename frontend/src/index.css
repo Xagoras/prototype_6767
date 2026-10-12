@@ -429,3 +429,10 @@ button.primary:disabled { opacity: 0.6; cursor: not-allowed; }
 .diff-side { color: var(--ink); }
 .diff-side b { color: var(--accent); font-weight: 600; }
 .diff-vs { color: var(--muted); font-size: 11px; }
+
+/* ---------- 导出与比对 ---------- */
+.graph-export-group { display: inline-flex; gap: 4px; }
+.compare-target-switch { display: flex; gap: 4px; }
+.compare-target-switch .link-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.compare-rate { margin-top: 12px; font-size: 13px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
+.row-focus { background: #fdf8ec; }

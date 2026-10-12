@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import adjudication, annotations, assignments, auth, documents, guides, tasks, users
+from .api import adjudication, annotations, assignments, auth, documents, exports, guides, tasks, users
 from .database import Base, engine
 
 app = FastAPI(title="法律论证标注系统", version="0.1.0")
@@ -24,6 +24,7 @@ app.include_router(documents.router, prefix="/api")
 app.include_router(assignments.router, prefix="/api")
 app.include_router(annotations.router, prefix="/api")
 app.include_router(adjudication.router, prefix="/api")
+app.include_router(exports.router, prefix="/api")
 
 
 @app.on_event("startup")

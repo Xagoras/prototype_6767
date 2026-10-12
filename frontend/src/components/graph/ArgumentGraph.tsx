@@ -5,13 +5,15 @@
  * - 节点拖拽结束 → graph_layout 回写（双向联动：图示调整 → 同步更新标注数据）
  * - 自动布局（dagre）与手动位置共存："重置布局"清空手动位置
  */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   Background, Controls, ReactFlow, applyEdgeChanges, applyNodeChanges,
   useEdgesState, useNodesState,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { toJpeg, toPng, toSvg } from 'html-to-image'
 import type { Node, OnNodesChange } from '@xyflow/react'
+import { api, errMsg } from '../../api/client'
 import { useAnnotationStore } from '../../stores/annotationStore'
 import { dagreLayout } from '../../utils/layout'
 import { connectedComponents, treeToGraph } from './treeToGraph'
@@ -33,6 +35,9 @@ interface Props {
 export default function ArgumentGraph({ onGraphReady }: Props) {
   const store = useAnnotationStore()
   const [activeComponent, setActiveComponent] = useState(0)
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState('')
 
   // 关系树 → 节点/边
   const { allNodes, allEdges, components } = useMemo(() => {
@@ -106,6 +111,36 @@ export default function ArgumentGraph({ onGraphReady }: Props) {
     store.updateGraphLayout({ positions })
   }
 
+  /** 导出当前子图为图片（需求 5.1.1：PNG/JPG/SVG），本地下载并登记导出记录 */
+  const exportImage = async (format: 'png' | 'jpg' | 'svg') => {
+    const el = canvasRef.current?.querySelector('.react-flow') as HTMLElement | null
+    if (!el || !store.doc) return
+    setExporting(true)
+    setExportError('')
+    try {
+      const opts = {
+        pixelRatio: 2,
+        filter: (node: HTMLElement) => !node.classList?.contains('react-flow__controls'),
+      }
+      const dataUrl =
+        format === 'png' ? await toPng(el, opts)
+        : format === 'jpg' ? await toJpeg(el, opts)
+        : await toSvg(el, opts)
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = `${store.doc.name}_论证图.${format}`
+      a.click()
+      // 登记导出记录（同样触发文档锁定，需求 5.3）
+      await api.post(`/documents/${store.doc.id}/exports/record`, {
+        format, filename: a.download,
+      }).catch(() => { /* 登记失败不阻断下载 */ })
+    } catch (e) {
+      setExportError(errMsg(e))
+    } finally {
+      setExporting(false)
+    }
+  }
+
   if (store.propositions.length === 0) {
     return (
       <div className="graph-empty">
@@ -132,8 +167,20 @@ export default function ArgumentGraph({ onGraphReady }: Props) {
         <button className="graph-reset link-btn" onClick={resetLayout} title="清空手动位置重新自动布局">
           重置布局
         </button>
+        <span className="graph-export-group">
+          <button className="graph-reset link-btn" disabled={exporting} onClick={() => exportImage('png')} title="导出当前子图为 PNG">
+            {exporting ? '导出中…' : '导出 PNG'}
+          </button>
+          <button className="graph-reset link-btn" disabled={exporting} onClick={() => exportImage('svg')} title="导出当前子图为 SVG">
+            SVG
+          </button>
+          <button className="graph-reset link-btn" disabled={exporting} onClick={() => exportImage('jpg')} title="导出当前子图为 JPG">
+            JPG
+          </button>
+        </span>
       </div>
-      <div className="graph-canvas">
+      {exportError && <div className="error" style={{ padding: '0 8px' }}>{exportError}</div>}
+      <div className="graph-canvas" ref={canvasRef}>
         <ReactFlow
           key={key}
           nodes={nodes}
