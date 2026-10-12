@@ -52,6 +52,7 @@ interface AnnotationState {
   mergeProps: (seqA: number, seqB: number) => void
   editPropText: (seq: number, text: string) => void
   addRelation: (type: RelType, args: { kind: 'P' | 'R'; id: number }[]) => void
+  updateRelation: (index: number, patch: Partial<RelationNode>) => void
   deleteRelation: (index: number) => void
   updateGraphLayout: (layout: GraphLayout) => void
   undo: () => void
@@ -213,6 +214,12 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => {
         note: '', flagged: false, flag_note: '',
       }
       pushSnapshotAndSave({ relations: [...get().relations, rel] })
+    },
+
+    updateRelation: (index, patch) => {
+      const relations = get().relations.map((r, i) =>
+        i === index ? { ...r, ...patch } : r)
+      pushSnapshotAndSave({ relations })
     },
 
     deleteRelation: (index) => {

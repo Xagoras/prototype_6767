@@ -6,8 +6,10 @@
  */
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import ArgumentGraph from '../components/graph/ArgumentGraph'
 import LabelPicker from '../components/annotate/LabelPicker'
 import PropositionList from '../components/annotate/PropositionList'
+import RelationBuilder from '../components/annotate/RelationBuilder'
 import TextPanel from '../components/annotate/TextPanel'
 import ResizableTriPanel from '../components/common/ResizableTriPanel'
 import { useAnnotationStore } from '../stores/annotationStore'
@@ -84,18 +86,13 @@ export default function AnnotatePage() {
                 <LabelPicker />
               </div>
               <div className="col-pane grow1">
-                <div className="rel-builder">
-                  <div className="rel-builder-head">关系标注（M4 接入）</div>
-                  <div className="empty-hint">M4 里程碑：选择命题建立支持/反对/组合/匹配/同一关系</div>
-                </div>
+                <RelationBuilder />
               </div>
             </div>
           }
           right={
             <div className="col-pane">
-              <div className="graph-placeholder">
-                <div className="empty-hint">论证图示区（M4 接入）<br />矩形=命题 · 实心圆=支持 · 空心圆=反对 · ⊕=组合/匹配</div>
-              </div>
+              <ArgumentGraph />
             </div>
           }
         />
