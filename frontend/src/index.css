@@ -151,3 +151,83 @@ button.primary:disabled { opacity: 0.6; cursor: not-allowed; }
   background: #fdf3e0; border: 1px solid #e8c98a; color: var(--warn);
   border-radius: 8px; padding: 12px 14px; font-size: 13px;
 }
+
+/* ---------- 向导 ---------- */
+.wizard-steps { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+.wizard-step {
+  padding: 6px 12px; border-radius: 14px; background: var(--panel);
+  border: 1px solid var(--line); color: var(--muted); font-size: 13px;
+}
+.wizard-step.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.wizard-step.done { background: #cfe6d8; color: var(--ok); }
+.wizard-panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 20px;
+}
+.wizard-panel h2 { margin: 0 0 14px; font-size: 16px; }
+.wizard-panel h3 { margin: 18px 0 10px; font-size: 14px; }
+.doc-switch { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.doc-switch .link-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.upload-results { margin-top: 12px; background: var(--bg); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+.info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0 16px; }
+.assign-matrix { display: flex; gap: 28px; flex-wrap: wrap; }
+.assign-col { display: flex; flex-direction: column; gap: 6px; }
+.assign-item { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.meta-chip {
+  font-size: 12px; background: var(--bg); border: 1px solid var(--line);
+  padding: 3px 10px; border-radius: 12px; color: var(--muted); margin-right: 6px;
+}
+.task-head {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px 18px; flex-wrap: wrap; gap: 10px;
+}
+.simple-table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: 8px; overflow: hidden; }
+.simple-table th, .simple-table td { border-bottom: 1px solid var(--line); padding: 8px 12px; text-align: left; font-size: 13px; }
+.simple-table th { background: var(--bg); color: var(--muted); }
+
+/* ---------- 提取校正 ---------- */
+.extraction { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.extraction-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 12px; background: var(--bg); font-size: 13px; flex-wrap: wrap; gap: 8px;
+}
+.extraction-method { font-style: normal; margin-left: 10px; font-size: 12px; color: var(--muted); }
+.extraction-actions { display: flex; gap: 6px; align-items: center; }
+.extraction-actions input { width: 90px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; }
+.extraction-text { max-height: 380px; overflow: auto; font-size: 13px; line-height: 1.9; }
+.extraction-line { display: flex; align-items: flex-start; }
+.extraction-line.in-range { background: #fdf0d8; }
+.extraction-line:hover .line-actions { visibility: visible; }
+.line-actions { visibility: hidden; flex-shrink: 0; margin-right: 6px; }
+.line-actions button {
+  font-size: 11px; padding: 0 5px; margin-right: 2px; border: 1px solid var(--line);
+  background: var(--panel); border-radius: 4px; cursor: pointer; color: var(--accent);
+}
+.line-content { white-space: pre-wrap; }
+
+/* ---------- 切割编辑器 ---------- */
+.seg-editor { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 12px; background: var(--bg); font-size: 13px; flex-wrap: wrap; gap: 8px;
+}
+.seg-actions { display: flex; gap: 8px; }
+.seg-list { max-height: 420px; overflow: auto; padding: 8px; }
+.seg-item {
+  display: flex; align-items: flex-start; gap: 8px; padding: 7px 8px;
+  border-bottom: 1px solid var(--bg); font-size: 13px; line-height: 1.8;
+}
+.seg-item.selected { background: var(--accent-soft); }
+.seg-index { flex-shrink: 0; min-width: 24px; color: var(--accent); font-weight: 600; }
+.seg-text { flex: 1; white-space: pre-wrap; }
+.split-btn {
+  font-size: 10px; border: none; background: none; cursor: pointer; opacity: 0.35;
+  color: var(--accent); padding: 0 2px; vertical-align: middle;
+}
+.split-btn:hover { opacity: 1; }
+.del-btn {
+  flex-shrink: 0; border: none; background: none; cursor: pointer;
+  color: var(--muted); font-size: 13px;
+}
+.del-btn:hover { color: var(--accent); }

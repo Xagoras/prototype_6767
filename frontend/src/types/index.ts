@@ -82,6 +82,9 @@ export interface Task {
   annotators_per_doc: number
   settings: Record<string, unknown>
   created_at: string
+  // 展示冗余字段
+  guide_version?: string
+  document_count?: number
 }
 
 /** 案例信息：按 doc_type 三套字段 */
@@ -126,7 +129,7 @@ export interface Document {
   reasoning_text: string
   reasoning_start: number | null
   reasoning_end: number | null
-  extraction_method: 'auto' | 'manual_corrected' | 'manual'
+  extraction_method: 'auto' | 'manual_corrected' | 'manual' | 'manual_required'
   case_info: CaseInfo
   base_segments: Segment[]
   guide_version_snapshot: string
@@ -148,6 +151,16 @@ export interface Assignment {
   // 冗余展示字段
   username?: string
   display_name?: string
+  document_name?: string
+}
+
+/** 上传处理结果（单文件） */
+export interface UploadResult {
+  filename: string
+  ok: boolean
+  error: string | null
+  document_id: number | null
+  extraction_method: string | null
 }
 
 // ---------- 标注版本 ----------

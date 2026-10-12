@@ -2,14 +2,16 @@
  * 工作台首页：任务卡片 + "我的待标注"队列（M2 后接入真实数据）。
  */
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api, errMsg } from '../api/client'
 import { useAuthStore } from '../stores/authStore'
-import type { Task } from '../types'
+import type { Assignment, Task } from '../types'
 
 export default function DashboardPage() {
+  const navigate = useNavigate()
   const { user, logout } = useAuthStore()
   const [tasks, setTasks] = useState<Task[]>([])
+  const [myAssigns, setMyAssigns] = useState<Assignment[]>([])
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -17,6 +19,10 @@ export default function DashboardPage() {
       .get<Task[]>('/tasks')
       .then((r) => setTasks(r.data))
       .catch((e) => setError(errMsg(e)))
+    api
+      .get<Assignment[]>('/me/assignments')
+      .then((r) => setMyAssigns(r.data))
+      .catch(() => {})
   }, [])
 
   return (
@@ -59,9 +65,31 @@ export default function DashboardPage() {
         </section>
 
         <section>
-          <h2>我的待标注队列</h2>
-          <div className="empty-hint">
-            （M2 里程碑接入：显示被分配的文档，"点击下一条即可获取分配任务"）
+          <h2>我的任务队列</h2>
+          {myAssigns.length === 0 && (
+            <div className="empty-hint">暂无分配给您的文档，等待管理员分配即可（点击"下一条"获取分配任务）</div>
+          )}
+          <div className="card-grid">
+            {myAssigns.map((a) => (
+              <div className="task-card" key={a.id}>
+                <div className="task-card-title">{a.document_name || `文档 #${a.document_id}`}</div>
+                <div className="task-card-meta">
+                  <span>{a.role === 'annotator' ? '标注员' : a.role === 'arbiter' ? '裁定者' : '标准答案标注'}</span>
+                  <span>{a.assigned_at.slice(0, 10)}</span>
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  {a.role !== 'arbiter' ? (
+                    <button className="primary" onClick={() => navigate(`/annotate/${a.document_id}`)}>
+                      {a.role === 'reference' ? '标注标准答案 →' : '下一条 →'}
+                    </button>
+                  ) : (
+                    <button className="primary" onClick={() => navigate(`/adjudicate/${a.document_id}`)}>
+                      去裁定 →
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       </main>

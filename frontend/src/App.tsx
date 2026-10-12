@@ -7,6 +7,8 @@ import { useAuthStore } from './stores/authStore'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import GuideManagePage from './pages/GuideManagePage'
+import TaskCreatePage from './pages/TaskCreatePage'
+import TaskDetailPage from './pages/TaskDetailPage'
 
 /** 需要登录的页面壳：无 token 跳转登录页 */
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -40,6 +42,22 @@ export default function App() {
           element={
             <RequireAuth>
               <GuideManagePage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/tasks/new"
+          element={
+            <RequireAuth>
+              <TaskCreatePage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/tasks/:id"
+          element={
+            <RequireAuth>
+              <TaskDetailPage />
             </RequireAuth>
           }
         />

@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import auth, guides, users
+from .api import assignments, auth, documents, guides, tasks, users
 from .database import Base, engine
 
 app = FastAPI(title="法律论证标注系统", version="0.1.0")
@@ -19,6 +19,9 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(guides.router, prefix="/api")
+app.include_router(tasks.router, prefix="/api")
+app.include_router(documents.router, prefix="/api")
+app.include_router(assignments.router, prefix="/api")
 
 
 @app.on_event("startup")
