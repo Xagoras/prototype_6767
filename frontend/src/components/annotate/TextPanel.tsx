@@ -30,10 +30,10 @@ export default function TextPanel({ text, propositions, readOnly = false }: Prop
   const lines = useMemo(() => lineStarts(text), [text])
   const guide = store.guide
 
-  /** 一二级标签按钮（浮动工具条用） */
+  /** 浮动工具条的一二级标签按钮：完全由指南 taxonomy 驱动，不硬编码类型列表 */
   const topLevel = useMemo(() => {
     if (!guide) return []
-    return guide.taxonomy.elements.filter((e) => ['SF', 'GF', 'SM', 'GM', 'IS', 'Non'].includes(e.code))
+    return guide.taxonomy.elements
   }, [guide])
 
   const onMouseUp = () => {
