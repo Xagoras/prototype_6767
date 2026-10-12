@@ -180,6 +180,11 @@ export interface AnnotationVersion {
   submitted_at: string | null
   // 展示冗余字段
   annotator_name?: string
+  document_name?: string
+  // my-version / PUT content 返回的完整内容
+  propositions?: Proposition[]
+  relations?: RelationNode[]
+  editable?: boolean
 }
 
 /** 图示拖拽结果：visualId（命题 id 或关系 id）→ 坐标 */
