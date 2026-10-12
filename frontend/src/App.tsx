@@ -1,5 +1,6 @@
 /**
  * 路由表与登录守卫。
+ * （页面心跳在 main.tsx 模块级实现，不随 React 树卸载而停止）
  */
 import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'

@@ -69,6 +69,24 @@ function snapshotOf(s: Pick<AnnotationState, 'propositions' | 'relations' | 'gra
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null
 
+/**
+ * 服务器关系 → 本地形式转换：
+ * 服务器 args 的 id 是数据库主键（P=命题 dbId、R=关系 dbId），
+ * 本地约定 args 的 id 是命题 seq / 关系数组下标（与保存 payload 一致）。
+ */
+function relationsFromServer(relations: RelationNode[], props: Proposition[]): RelationNode[] {
+  const idToIdx = new Map(relations.map((r, i) => [r.id, i]))
+  const propIdToSeq = new Map(props.map((p) => [p.id, p.seq as number]))
+  return relations.map((r) => ({
+    ...r,
+    args: r.args.map((a) =>
+      a.kind === 'P'
+        ? { ...a, id: propIdToSeq.get(a.id) ?? a.id }
+        : { ...a, id: idToIdx.get(a.id) ?? a.id },
+    ),
+  }))
+}
+
 /** 为 propositions 实时重排 seq（按 char_start） */
 function renumber(props: Proposition[]): Proposition[] {
   return [...props].sort((a, b) => a.char_start - b.char_start)
@@ -118,6 +136,7 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => {
         ])
         const docData = doc.data
         const guide = guides.data.find((g) => g.version === docData.guide_version_snapshot)
+        const props = renumber(ver.data.propositions ?? [])
         set({
           doc: docData,
           guide: guide ?? null,
@@ -125,8 +144,8 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => {
           kind: ver.data.kind,
           status: ver.data.status,
           editable: ver.data.editable,
-          propositions: renumber(ver.data.propositions ?? []),
-          relations: ver.data.relations ?? [],
+          propositions: props,
+          relations: relationsFromServer(ver.data.relations ?? [], props),
           graphLayout: ver.data.graph_layout,
           undoStack: [], redoStack: [], canUndo: false, canRedo: false,
         })
@@ -294,9 +313,10 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => {
           graph_layout: s.graphLayout,
         }
         const res = await api.put<AnnotationVersion>(`/versions/${s.versionId}/content`, payload)
+        const savedProps = renumber(res.data.propositions ?? [])
         set({
-          propositions: renumber(res.data.propositions ?? []),
-          relations: res.data.relations ?? [],
+          propositions: savedProps,
+          relations: relationsFromServer(res.data.relations ?? [], savedProps),
           graphLayout: res.data.graph_layout,
           status: res.data.status,
           lastError: '',
