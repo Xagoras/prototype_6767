@@ -13,7 +13,9 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from ..auth import get_current_user, get_document_or_404
+from ..auth import (
+    get_document_or_404, require_document_exporter, require_document_participant,
+)
 from ..database import get_db
 from ..models import (
     AnnotationVersion, Document, ExportRecord, Proposition, RelationNode, Task, User,
@@ -58,7 +60,7 @@ def _record_and_lock(db: Session, doc: Document, user: User, fmt: str,
 def export_document(document_id: int, format: str = "json",
                     filename: str = "",
                     db: Session = Depends(get_db),
-                    user: User = Depends(get_current_user)):
+                    user: User = Depends(require_document_exporter)):
     """导出最终版：json / excel 文件流（同时写记录并锁定）。"""
     doc = get_document_or_404(db, document_id)
     final = _get_final(db, doc)
@@ -98,11 +100,12 @@ def export_document(document_id: int, format: str = "json",
 @router.post("/documents/{document_id}/exports/record")
 def record_image_export(document_id: int, body: ExportRecordIn,
                         db: Session = Depends(get_db),
-                        user: User = Depends(get_current_user)):
+                        user: User = Depends(require_document_exporter)):
     """前端生成的 PNG/SVG/JPG 本地下载后登记记录（同样触发锁定）。"""
     doc = get_document_or_404(db, document_id)
     if body.format not in ("png", "svg", "jpg"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "图片格式无效")
+    _get_final(db, doc)  # 只有已生成最终版的文档才允许登记并锁定
     rec = _record_and_lock(db, doc, user, body.format, body.filename,
                            doc.guide_version_snapshot)
     return {"ok": True, "id": rec.id}
@@ -110,7 +113,7 @@ def record_image_export(document_id: int, body: ExportRecordIn,
 
 @router.get("/documents/{document_id}/exports")
 def list_exports(document_id: int, db: Session = Depends(get_db),
-                 user: User = Depends(get_current_user)):
+                 user: User = Depends(require_document_participant)):
     """导出记录列表（谁在何时下载了什么格式）。"""
     get_document_or_404(db, document_id)
     rows = (db.query(ExportRecord)

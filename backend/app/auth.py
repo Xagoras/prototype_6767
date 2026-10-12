@@ -98,3 +98,48 @@ def require_arbiter(
     if user.is_admin or task.created_by == user.id or _has_role(db, user.id, doc, ("arbiter",)):
         return user
     raise HTTPException(status.HTTP_403_FORBIDDEN, "仅裁定者或任务创建者可执行此操作")
+
+
+def can_manage_document(db: Session, user: User, doc: Document) -> bool:
+    """可否管理/导出该文档：管理员、任务创建者、或该文档裁定者。"""
+    if user.is_admin:
+        return True
+    task = db.get(Task, doc.task_id)
+    if task is not None and task.created_by == user.id:
+        return True
+    return _has_role(db, user.id, doc, ("arbiter",))
+
+
+def is_document_participant(db: Session, user: User, doc: Document) -> bool:
+    """是否该文档的参与者：管理员、创建者，或在该文档上有任意分配。"""
+    if user.is_admin:
+        return True
+    task = db.get(Task, doc.task_id)
+    if task is not None and task.created_by == user.id:
+        return True
+    return (
+        db.query(Assignment)
+        .filter(Assignment.document_id == doc.id, Assignment.user_id == user.id)
+        .first()
+        is not None
+    )
+
+
+def require_document_exporter(
+    document_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> User:
+    """导出/登记该文档：仅管理员、任务创建者或该文档裁定者（需求 5.2/5.3）。"""
+    doc = get_document_or_404(db, document_id)
+    if can_manage_document(db, user, doc):
+        return user
+    raise HTTPException(status.HTTP_403_FORBIDDEN, "仅任务创建者、裁定者或管理员可导出该文档")
+
+
+def require_document_participant(
+    document_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> User:
+    """查看该文档相关内容：管理员、创建者或该文档的任一分配人员。"""
+    doc = get_document_or_404(db, document_id)
+    if is_document_participant(db, user, doc):
+        return user
+    raise HTTPException(status.HTTP_403_FORBIDDEN, "无权查看该文档")
