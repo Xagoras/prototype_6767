@@ -6,6 +6,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-route
 import { useAuthStore } from './stores/authStore'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
+import GuideManagePage from './pages/GuideManagePage'
 
 /** 需要登录的页面壳：无 token 跳转登录页 */
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -31,6 +32,14 @@ export default function App() {
           element={
             <RequireAuth>
               <DashboardPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/guides"
+          element={
+            <RequireAuth>
+              <GuideManagePage />
             </RequireAuth>
           }
         />

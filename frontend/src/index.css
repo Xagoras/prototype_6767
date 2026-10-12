@@ -128,3 +128,26 @@ button.primary:disabled { opacity: 0.6; cursor: not-allowed; }
   outline: 2px solid var(--accent-soft); border-color: var(--accent);
 }
 .error { color: var(--accent); font-size: 13px; }
+
+/* ---------- 窄版页面（指南管理等） ---------- */
+.page-body.narrow { max-width: 860px; margin: 0 auto; width: 100%; }
+
+/* ---------- 上传拖放区 ---------- */
+.dropzone {
+  border: 2px dashed var(--line); border-radius: 10px; padding: 36px 20px;
+  text-align: center; cursor: pointer; background: var(--panel); color: var(--muted);
+  transition: border-color .15s, background .15s;
+}
+.dropzone.dragging { border-color: var(--accent); background: var(--accent-soft); }
+.dropzone-icon { font-size: 30px; margin-bottom: 8px; }
+.dropzone-sub { font-size: 12px; margin-top: 6px; }
+
+/* ---------- 指南预览 ---------- */
+.text-preview {
+  max-height: 220px; overflow: auto; background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 10px 12px; font-size: 13px; line-height: 1.7; white-space: pre-wrap;
+}
+.warn-box {
+  background: #fdf3e0; border: 1px solid #e8c98a; color: var(--warn);
+  border-radius: 8px; padding: 12px 14px; font-size: 13px;
+}

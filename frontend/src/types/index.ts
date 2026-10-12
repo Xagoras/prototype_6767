@@ -55,6 +55,7 @@ export interface Guide {
 export interface GuidePreview {
   version: string
   name: string
+  source_filename: string
   text_preview: string
   content_text: string
   taxonomy: Taxonomy
