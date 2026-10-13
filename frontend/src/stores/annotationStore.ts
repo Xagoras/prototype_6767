@@ -245,15 +245,34 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => {
     },
 
     deleteRelation: (index) => {
-      const relations = get().relations.filter((_, i) => i !== index)
-      // 级联删除引用该节点的关系；引用下标前移
-      const cleaned = relations
-        .filter((r) => !r.args.some((a) => a.kind === 'R' && a.id === index))
-        .map((r) => ({
-          ...r,
-          args: r.args.map((a) =>
-            a.kind === 'R' && a.id > index ? { ...a, id: a.id - 1 } : a),
-        }))
+      const all = get().relations
+      // 沿引用链迭代收集全部待删节点：直接引用被删节点者、以及引用了这些节点者
+      // （多层嵌套，如 A(p3, S(J(p1,p2),p3)) 删内层 J 时 M/S 链需一并删除），
+      // 否则会残留悬空 R 引用 → 关系表达式递归越界崩溃
+      const toRemove = new Set<number>([index])
+      let changed = true
+      while (changed) {
+        changed = false
+        all.forEach((r, i) => {
+          if (toRemove.has(i)) return
+          if (r.args.some((a) => a.kind === 'R' && toRemove.has(a.id))) {
+            toRemove.add(i)
+            changed = true
+          }
+        })
+      }
+      const kept = all.filter((_, i) => !toRemove.has(i))
+      // 旧下标 → 新下标（保留节点间的引用全部落在保留集合内，映射必存在）
+      const remap = new Map<number, number>()
+      let next = 0
+      all.forEach((_, i) => {
+        if (!toRemove.has(i)) remap.set(i, next++)
+      })
+      const cleaned = kept.map((r) => ({
+        ...r,
+        args: r.args.map((a) =>
+          a.kind === 'R' ? { ...a, id: remap.get(a.id) ?? a.id } : a),
+      }))
       pushSnapshotAndSave({ relations: cleaned })
     },
 
