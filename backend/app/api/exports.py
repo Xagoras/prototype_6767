@@ -18,12 +18,11 @@ from ..auth import (
 )
 from ..database import get_db
 from ..models import (
-    AnnotationVersion, Document, ExportRecord, Proposition, RelationNode, Task, User,
+    AnnotationVersion, Document, ExportRecord, Proposition, RelationNode, User,
 )
 from ..schemas.adjudication import AdjudicateRequest  # noqa: F401（避免循环导入干扰）
 from ..services.export_excel import build_excel
 from ..services.export_json import build_export_json
-from ..services.guards import assert_not_locked
 
 router = APIRouter(prefix="", tags=["exports"])
 
@@ -40,9 +39,11 @@ def _get_final(db: Session, doc: Document) -> AnnotationVersion:
         .order_by(AnnotationVersion.id.desc())
         .first()
     )
-    if final is None:
+    # 工作副本（kind=final, status=draft）不算"已定稿"：
+    # 裁定者编辑期间导出/登记会把文档锁进 OUTPUT，导致定稿流程无法继续
+    if final is None or final.status != "submitted":
         raise HTTPException(status.HTTP_409_CONFLICT,
-                            "该文档尚未裁定生成最终版，无法导出")
+                            "该文档最终版尚未定稿，无法导出")
     return final
 
 

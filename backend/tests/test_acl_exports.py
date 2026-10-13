@@ -57,3 +57,40 @@ def test_image_export_requires_final_version(client, users):
                     json={"format": "png", "filename": "x.png"})
     assert r.status_code == 409
     assert client.get(f"/api/documents/{doc['id']}", headers=th).json()["status"] != "OUTPUT"
+
+
+def test_export_blocked_until_final_submitted(client, users):
+    """裁定工作副本（kind=final, status=draft）不算定稿：
+
+    编辑期导出/登记 → 409 且不锁定（否则锁死后定稿流程无法继续）；
+    提交定稿后 → 可登记并锁定。
+    """
+    doc, _ = _make_doc(client, users, "ACL-定稿门")
+    th = users["teacher"]["headers"]
+    # teacher 标准答案（reference 版本）并提交
+    mv = client.get(f"/api/documents/{doc['id']}/my-version", headers=th).json()
+    rt = doc["reasoning_text"]
+    a = rt.index("依法成立")
+    ae = rt.index("。", a) + 1
+    payload = {"propositions": [{"char_start": a, "char_end": ae,
+                                 "text": rt[a:ae], "type_code": "GM"}],
+               "relations": [], "graph_layout": {"positions": {}}}
+    assert client.put(f"/api/versions/{mv['id']}/content", headers=th, json=payload).status_code == 200
+    client.post(f"/api/versions/{mv['id']}/submit", headers=th)
+    # 生成最终版工作副本（draft）
+    adj = client.post(f"/api/documents/{doc['id']}/adjudicate", headers=th,
+                      json={"base_version_id": mv["id"], "note": ""})
+    assert adj.status_code == 200, adj.text
+    assert adj.json()["kind"] == "final" and adj.json()["status"] == "draft"
+    final_id = adj.json()["id"]
+    # 编辑期：导出与登记均 409，文档不锁定
+    assert client.post(f"/api/documents/{doc['id']}/exports/record", headers=th,
+                       json={"format": "png", "filename": "x.png"}).status_code == 409
+    assert client.post(f"/api/documents/{doc['id']}/export", headers=th,
+                       params={"format": "json"}).status_code == 409
+    assert client.get(f"/api/documents/{doc['id']}", headers=th).json()["status"] != "OUTPUT"
+    # 提交定稿 → 可登记并锁定
+    assert client.post(f"/api/versions/{final_id}/submit", headers=th).status_code == 200
+    assert client.post(f"/api/documents/{doc['id']}/exports/record", headers=th,
+                       json={"format": "png", "filename": "x.png"}).status_code == 200
+    assert client.get(f"/api/documents/{doc['id']}", headers=th).json()["status"] == "OUTPUT"

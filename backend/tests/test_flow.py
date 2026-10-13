@@ -63,6 +63,9 @@ def test_full_four_stage_flow(client, users, demo_doc):
     fin = client.get(f"/api/documents/{doc['id']}/final", headers=th["headers"]).json()
     assert len(fin["propositions"]) == 2
     assert fin["relations"][0]["expr"] == "S(P1, P2)"
+    # 提交定稿（工作副本 draft 未定稿前不可导出，见 exports._get_final）
+    assert client.post(f"/api/versions/{adj.json()['id']}/submit",
+                       headers=th["headers"]).status_code == 200
 
     # 阶段四：导出 + 锁定
     rj = client.post(f"/api/documents/{doc['id']}/export", headers=th["headers"],

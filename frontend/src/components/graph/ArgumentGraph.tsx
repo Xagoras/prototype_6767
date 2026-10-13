@@ -114,7 +114,7 @@ export default function ArgumentGraph({ onGraphReady }: Props) {
   /** 导出当前子图为图片（需求 5.1.1：PNG/JPG/SVG），本地下载并登记导出记录 */
   const exportImage = async (format: 'png' | 'jpg' | 'svg') => {
     const el = canvasRef.current?.querySelector('.react-flow') as HTMLElement | null
-    if (!el || !store.doc || store.kind !== 'final') return
+    if (!el || !store.doc || store.kind !== 'final' || store.status !== 'submitted') return
     setExporting(true)
     setExportError('')
     try {
@@ -167,7 +167,7 @@ export default function ArgumentGraph({ onGraphReady }: Props) {
         <button className="graph-reset link-btn" onClick={resetLayout} title="清空手动位置重新自动布局">
           重置布局
         </button>
-        {store.kind === 'final' && (
+        {store.kind === 'final' && store.status === 'submitted' && (
           <span className="graph-export-group">
             <button className="graph-reset link-btn" disabled={exporting} onClick={() => exportImage('png')} title="导出当前子图为 PNG">
               {exporting ? '导出中…' : '导出 PNG'}
