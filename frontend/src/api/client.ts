@@ -38,6 +38,22 @@ export function errMsg(err: unknown): string {
   return String(err)
 }
 
+/** 同 errMsg，但兼容 responseType:'blob' 的错误响应（如导出中心下载 409）：
+ *  此时 err.response.data 是 Blob，需异步读出文本再取 detail。 */
+export async function errMsgFromBlob(err: unknown): Promise<string> {
+  if (axios.isAxiosError(err) && err.response?.data instanceof Blob) {
+    try {
+      const parsed = JSON.parse(await err.response.data.text())
+      const detail = parsed?.detail
+      if (typeof detail === 'string') return detail
+      if (Array.isArray(detail)) return detail.map((d) => d.msg).join('；')
+    } catch {
+      /* 非 JSON blob，回落 errMsg */
+    }
+  }
+  return errMsg(err)
+}
+
 // ---------- 认证 ----------
 import type { TokenResponse, User } from '../types'
 

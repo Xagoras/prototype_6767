@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { api, errMsg } from '../api/client'
+import { api, errMsg, errMsgFromBlob } from '../api/client'
 import type { Document, ExportRecord } from '../types'
 
 export default function ExportCenterPage() {
@@ -53,7 +53,8 @@ export default function ExportCenterPage() {
       setRecords((prev) => ({ ...prev, [docId]: rr.data }))
       setDocs((prev) => prev.map((d) => (d.id === docId ? dd.data : d)))
     } catch (e) {
-      setError(errMsg(e))
+      // 下载用 responseType:'blob'，错误体需从 Blob 解析 detail（如"最终版尚未定稿"409）
+      setError(await errMsgFromBlob(e))
     } finally {
       setBusy(false)
     }

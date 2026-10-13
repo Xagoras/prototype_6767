@@ -106,7 +106,7 @@ def record_image_export(document_id: int, body: ExportRecordIn,
     doc = get_document_or_404(db, document_id)
     if body.format not in ("png", "svg", "jpg"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "图片格式无效")
-    _get_final(db, doc)  # 只有已生成最终版的文档才允许登记并锁定
+    _get_final(db, doc)  # 仅"已定稿"（kind=final 且 status=submitted）的文档才允许登记并锁定
     rec = _record_and_lock(db, doc, user, body.format, body.filename,
                            doc.guide_version_snapshot)
     return {"ok": True, "id": rec.id}
