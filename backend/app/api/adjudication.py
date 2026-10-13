@@ -248,8 +248,24 @@ def adjudicate(document_id: int, body: AdjudicateRequest,
 @router.get("/documents/{document_id}/final", response_model=VersionOut)
 def get_final(document_id: int, db: Session = Depends(get_db),
               user: User = Depends(require_document_participant)):
-    """最终版内容（文档参与者/创建者/管理员可见，Q7）。"""
-    get_document_or_404(db, document_id)
+    """最终版内容（文档参与者/创建者/管理员可见，Q7）。
+
+    与 compare 同规则：非管理者须"本人标注已提交"或文档已裁定/输出，
+    否则 403（原型 2.1：不得在学生正式提交前暴露标准答案内容）。
+    """
+    doc = get_document_or_404(db, document_id)
+    if not can_manage_document(db, user, doc):
+        own_submitted = (
+            db.query(AnnotationVersion)
+            .filter(AnnotationVersion.document_id == doc.id,
+                    AnnotationVersion.annotator_id == user.id,
+                    AnnotationVersion.kind == "normal",
+                    AnnotationVersion.status == "submitted")
+            .first()
+        ) is not None
+        if not own_submitted and doc.status not in ("ADJUDICATED", "OUTPUT"):
+            raise HTTPException(status.HTTP_403_FORBIDDEN,
+                                "请先提交标注，之后方可查看最终版")
     final = (
         db.query(AnnotationVersion)
         .filter(AnnotationVersion.document_id == document_id, AnnotationVersion.kind == "final")

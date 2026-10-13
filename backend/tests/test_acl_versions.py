@@ -110,3 +110,30 @@ def test_manager_compare_sees_all(client, users):
                      headers=users["teacher"]["headers"]).json()
     ids = {g["version_id"] for g in cmp["groups"]}
     assert {mv1["id"], mv2["id"]} <= ids
+
+
+def test_final_gated_until_own_submit(client, users):
+    """未提交学生不能读 /final（即使最终版工作副本已存在）；提交后可读。
+
+    与 compare 的"须已提交"门槛对齐（原型 2.1：提交前不得暴露标准答案内容）。
+    """
+    doc, task = _make_task_doc(client, users, "ACL-final门槛")
+    _assign(client, users, task, doc, "stu1", ["annotator"])
+    _assign(client, users, task, doc, "teacher", ["reference", "arbiter"])
+    th = users["teacher"]["headers"]
+    s1 = users["stu1"]["headers"]
+    # teacher 标准答案并提交，裁定生成最终版工作副本（stu1 从未提交）
+    mv_t = client.get(f"/api/documents/{doc['id']}/my-version", headers=th).json()
+    _put_prop(client, th, mv_t["id"], doc["reasoning_text"])
+    client.post(f"/api/versions/{mv_t['id']}/submit", headers=th)
+    adj = client.post(f"/api/documents/{doc['id']}/adjudicate", headers=th,
+                      json={"base_version_id": mv_t["id"], "note": ""})
+    assert adj.status_code == 200, adj.text
+    # 未提交 → 403；裁定者本人 → 200
+    assert client.get(f"/api/documents/{doc['id']}/final", headers=s1).status_code == 403
+    assert client.get(f"/api/documents/{doc['id']}/final", headers=th).status_code == 200
+    # stu1 提交自己的标注 → 可读最终版
+    mv1 = client.get(f"/api/documents/{doc['id']}/my-version", headers=s1).json()
+    _put_prop(client, s1, mv1["id"], doc["reasoning_text"])
+    assert client.post(f"/api/versions/{mv1['id']}/submit", headers=s1).status_code == 200
+    assert client.get(f"/api/documents/{doc['id']}/final", headers=s1).status_code == 200
