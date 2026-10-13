@@ -61,4 +61,33 @@ describe('selectionToRange 码点偏移', () => {
     mockSelection(markText, 1, after, 2) // 从"乙说"的"说"选到"丙说"末尾
     expect(selectionToRange(root, 9)).toEqual({ start: 4, end: 8 })
   })
+
+  it('空行不渲染占位文本节点（行 DOM 文本 == 原文，回归）', () => {
+    // 原文 "甲说。\n\n乙说。"：中间为空行（码点偏移 4），不得渲染占位空格
+    document.body.innerHTML =
+      '<div id="root">' +
+      '<div class="text-line" data-start="0">甲说。</div>' +
+      '<div class="text-line" data-start="4"></div>' +
+      '<div class="text-line" data-start="5">乙说。</div>' +
+      '</div>'
+    const emptyLine = document.querySelectorAll('.text-line')[1] as HTMLElement
+    expect(emptyLine.childNodes).toHaveLength(0)
+  })
+
+  it('跨空行选择：偏移仍与原文码点一致（回归）', () => {
+    document.body.innerHTML =
+      '<div id="root">' +
+      '<div class="text-line" data-start="0">甲说。</div>' +
+      '<div class="text-line" data-start="4"></div>' +
+      '<div class="text-line" data-start="5">乙说。</div>' +
+      '</div>'
+    const root = document.getElementById('root') as HTMLElement
+    const lines = document.querySelectorAll('.text-line')
+    const t0 = lines[0].firstChild as Text
+    const t2 = lines[2].firstChild as Text
+    mockSelection(t0, 0, t2, 2) // "甲说。" 起选，跨空行到 "乙说"
+    expect(selectionToRange(root, 8)).toEqual({ start: 0, end: 7 })
+    mockSelection(t2, 0, t2, 2) // 仅 "乙说"
+    expect(selectionToRange(root, 8)).toEqual({ start: 5, end: 7 })
+  })
 })

@@ -115,7 +115,9 @@ export default function TextPanel({ text, propositions, readOnly = false }: Prop
       <div className="text-panel-body" ref={rootRef} onMouseUp={onMouseUp}>
         {lines.map((line, i) => (
           <div key={i} className="text-line" data-start={line.start}>
-            {line.content === '' ? ' ' : renderLine(line.start, line.content)}
+            {/* 空行不渲染任何文本节点（行高由 CSS :empty::before 撑起），
+                否则占位空格会破坏"行 DOM 文本 == 原文"不变式，选区偏移错位 */}
+            {line.content !== '' && renderLine(line.start, line.content)}
           </div>
         ))}
       </div>

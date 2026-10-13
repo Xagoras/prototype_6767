@@ -248,6 +248,8 @@ button.primary:disabled { opacity: 0.6; cursor: not-allowed; }
   line-height: 2.1; user-select: text; cursor: text;
 }
 .text-line { white-space: pre-wrap; }
+/* 空行不渲染文本节点（占位空格会污染选区码点偏移），行高用伪元素撑起 */
+.text-line:empty::before { content: ' '; }
 .prop-mark { color: inherit; padding: 1px 0; border-radius: 2px; }
 /* 序号角标用 CSS content 渲染（不产生 DOM 文本节点），避免污染选区码点偏移计算 */
 .prop-mark::after {
