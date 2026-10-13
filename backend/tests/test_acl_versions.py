@@ -137,3 +137,38 @@ def test_final_gated_until_own_submit(client, users):
     _put_prop(client, s1, mv1["id"], doc["reasoning_text"])
     assert client.post(f"/api/versions/{mv1['id']}/submit", headers=s1).status_code == 200
     assert client.get(f"/api/documents/{doc['id']}/final", headers=s1).status_code == 200
+
+
+def test_reference_author_gates_align_with_compare(client, users):
+    """仅 reference 角色（非创建者/裁定者）：/final 与 compare 门禁一致。
+
+    标准答案作者提交自己的 reference 版本后，两项门禁同放行；
+    未提交时两项门禁同拒绝（回归：/final 曾额外过滤 kind=normal 导致不对称）。
+    """
+    doc, task = _make_task_doc(client, users, "ACL-refonly")
+    th = users["teacher"]["headers"]
+    # 注册仅 reference 角色的用户（无 annotator，非创建者/裁定者）
+    r = client.post("/api/auth/register", json={
+        "username": "refonly_gate", "password": "demo123", "display_name": "refonly"})
+    assert r.status_code == 200, r.text
+    ref = {"Authorization": f"Bearer {r.json()['token']}"}
+    ref_id = client.get("/api/auth/me", headers=ref).json()["id"]
+    _assign_ref = client.post(f"/api/tasks/{task['id']}/assignments", headers=th,
+                              json={"document_ids": [doc["id"]],
+                                    "user_ids": [ref_id], "roles": ["reference"]})
+    assert _assign_ref.status_code == 200, _assign_ref.text
+
+    mv = client.get(f"/api/documents/{doc['id']}/my-version", headers=ref).json()
+    assert mv["kind"] == "reference"
+    _put_prop(client, ref, mv["id"], doc["reasoning_text"])
+    # 未提交：compare 与 /final 同拒
+    assert client.get(f"/api/documents/{doc['id']}/compare", headers=ref).status_code == 403
+    assert client.get(f"/api/documents/{doc['id']}/final", headers=ref).status_code == 403
+    # 提交自己的 reference 版本；裁定者以其为基准生成最终版工作副本
+    assert client.post(f"/api/versions/{mv['id']}/submit", headers=ref).status_code == 200
+    adj = client.post(f"/api/documents/{doc['id']}/adjudicate", headers=th,
+                      json={"base_version_id": mv["id"], "note": ""})
+    assert adj.status_code == 200, adj.text
+    # 提交后：compare 与 /final 同放行
+    assert client.get(f"/api/documents/{doc['id']}/compare", headers=ref).status_code == 200
+    assert client.get(f"/api/documents/{doc['id']}/final", headers=ref).status_code == 200

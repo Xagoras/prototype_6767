@@ -255,11 +255,12 @@ def get_final(document_id: int, db: Session = Depends(get_db),
     """
     doc = get_document_or_404(db, document_id)
     if not can_manage_document(db, user, doc):
+        # 与 compare 同规则：本人任一版本（normal/reference）已提交即放行——
+        # 标准答案作者天然知悉答案内容，无需过滤 kind
         own_submitted = (
             db.query(AnnotationVersion)
             .filter(AnnotationVersion.document_id == doc.id,
                     AnnotationVersion.annotator_id == user.id,
-                    AnnotationVersion.kind == "normal",
                     AnnotationVersion.status == "submitted")
             .first()
         ) is not None
