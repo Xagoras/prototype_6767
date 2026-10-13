@@ -2,7 +2,10 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from ..auth import get_current_user, get_document_or_404, get_task_or_404, require_task_creator
+from ..auth import (
+    get_current_user, get_document_or_404, get_task_or_404,
+    require_document_participant, require_task_creator,
+)
 from ..config import MAX_UPLOAD_SIZE
 from ..database import get_db
 from ..models import Assignment, Document, Guide, Task, User
@@ -133,7 +136,8 @@ def list_task_documents(task_id: int, db: Session = Depends(get_db),
 
 @router.get("/documents/{document_id}", response_model=DocumentOut)
 def get_document(document_id: int, db: Session = Depends(get_db),
-                 user: User = Depends(get_current_user)):
+                 user: User = Depends(require_document_participant)):
+    """文书详情（含全文）：仅参与者/创建者/管理员可读，防止任意遍历文书内容。"""
     doc = get_document_or_404(db, document_id)
     return _doc_out(db, doc, user)
 

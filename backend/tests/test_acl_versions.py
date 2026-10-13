@@ -172,3 +172,17 @@ def test_reference_author_gates_align_with_compare(client, users):
     # 提交后：compare 与 /final 同放行
     assert client.get(f"/api/documents/{doc['id']}/compare", headers=ref).status_code == 200
     assert client.get(f"/api/documents/{doc['id']}/final", headers=ref).status_code == 200
+
+
+def test_document_read_gated_to_participants(client, users):
+    """文书详情（含全文）仅参与者/创建者/管理员可读（回归：此前登录即可读任意文书）。"""
+    doc, task = _make_task_doc(client, users, "ACL-读文档")
+    th = users["teacher"]["headers"]
+    stranger = _stranger(client, "stranger_docread")
+    # 无关用户 → 403
+    assert client.get(f"/api/documents/{doc['id']}", headers=stranger).status_code == 403
+    # 创建者 → 200；被分配的标注员 → 200
+    assert client.get(f"/api/documents/{doc['id']}", headers=th).status_code == 200
+    _assign(client, users, task, doc, "stu1", ["annotator"])
+    assert client.get(f"/api/documents/{doc['id']}",
+                      headers=users["stu1"]["headers"]).status_code == 200
